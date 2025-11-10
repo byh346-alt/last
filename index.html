@@ -30,10 +30,10 @@
     
     /* '현재 위치' 버튼 스타일 */
     .location-button {
-      background: #3498db; /* 파란색 계열 */
-      width: 100%; /* 너비를 꽉 채움 */
-      max-width: 400px; /* 최대 너비 (기존 input+button과 비슷하게) */
-      margin-bottom: -15px; /* 아래 input-section과의 간격 조절 */
+      background: #3498db;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: -15px;
     }
     .location-button:hover {
       background: #2980b9;
@@ -191,11 +191,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// ===== 옷차림 팝업 관련 (Vercel 경로로 수정됨) =====
+// ===== 옷차림 팝업 관련 =====
 const popup = document.getElementById("clothingPopup");
 
 /** 옷차림 팝업 열기 (condition 인자 추가됨) */
-async function showClothingPopup(temp, condition) { // <-- condition 인자 받기
+async function showClothingPopup(temp, condition) {
   const popup = document.getElementById("clothingPopup");
   
   const location = document.getElementById("cityInput").value || "특정 장소 없음";
@@ -211,7 +211,9 @@ async function showClothingPopup(temp, condition) { // <-- condition 인자 받�
   popup.style.display = "block";
 
   try {
-    // ===== ★★★ Vercel 경로로 수정 ★★★ =====
+    // Vercel (또는 Netlify) 백엔드 함수 경로
+    // Vercel: /api/get-clothing-advice
+    // Netlify: /.netlify/functions/get-clothing-advice
     const response = await fetch(`/api/get-clothing-advice?temp=${temp}&location=${encodeURIComponent(location)}&condition=${encodeURIComponent(condition)}`);
     
     if (!response.ok) {
@@ -258,7 +260,7 @@ function hideMessageBox() {
   document.getElementById('messageBox').style.display = 'none';
 }
 
-// ===== GPS 위치 가져오기 함수 (도시 이름 변환 기능 추가됨) =====
+// ===== GPS 위치 가져오기 함수 (도시 이름 변환 및 -si 제거 기능) =====
 function getLocation() {
   if (navigator.geolocation) {
     showMessageBox("위치 확인 중...", "브라우저의 위치 정보 허용 팝업을 확인해주세요.");
@@ -281,7 +283,14 @@ function getLocation() {
             throw new Error("도시 이름을 찾을 수 없습니다.");
           }
           
-          const cityName = json[0].name; // API가 반환한 도시 이름 (예: "Iksan-si")
+          let cityName = json[0].name; // API가 반환한 도시 이름 (예: "Iksan-si")
+          
+          // ===== ( ★★★ 수정된 부분 ★★★ ) =====
+          // 만약 이름이 "-si"로 끝나면, "-si"를 제거합니다.
+          if (cityName.endsWith('-si')) {
+            cityName = cityName.substring(0, cityName.length - 3); // "Iksan-si" -> "Iksan"
+          }
+          // ====================================
           
           // (2) 가져온 도시 이름을 도시 입력창에 넣어줍니다.
           document.getElementById("cityInput").value = cityName;
@@ -494,7 +503,7 @@ async function getWeather() {
       td.innerText = avgTemp + "°C";
       if (avgTemp !== "-") {
         td.style.cursor = "pointer";
-        // ===== (수정됨) showClothingPopup에 majority 변수 전달 =====
+        // 'majority' (날씨 상태)를 두 번째 인자로 추가
         td.addEventListener("click", () => showClothingPopup(Number(avgTemp), majority));
       }
       tr.appendChild(td);
