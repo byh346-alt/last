@@ -28,7 +28,7 @@
       transform: translateY(-2px);
     }
     
-    /* ===== '현재 위치' 버튼 스타일 ===== */
+    /* '현재 위치' 버튼 스타일 */
     .location-button {
       background: #3498db; /* 파란색 계열 */
       width: 100%; /* 너비를 꽉 채움 */
@@ -191,41 +191,50 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// ===== 옷차림 팝업 관련 =====
+// ===== 옷차림 팝업 관련 (수정됨) =====
 const popup = document.getElementById("clothingPopup");
 
-/** 옷차림 팝업 열기 */
-async function showClothingPopup(temp) {
+/** 옷차림 팝업 열기 (condition 인자 추가됨) */
+async function showClothingPopup(temp, condition) { // <-- 1. condition 인자 받기
+  const popup = document.getElementById("clothingPopup");
+  
+  // 현재 입력된 위치(도시명 또는 좌표) 값을 가져옵니다.
+  const location = document.getElementById("cityInput").value || "특정 장소 없음";
+
   popup.innerHTML = `
     <div class="tooltip-header">
       <div class="tooltip-title">✨ 추천 옷차림</div>
-      <div aria-hidden="true">${Number(temp).toFixed(1)}°C</div>
+      <div aria-hidden="true">${Number(temp).toFixed(1)}°C (${condition})</div>
     </div>
-    <div class="outfit-description">AI가 옷차림을 생성하는 중... 잠시만 기다려주세요.</div>
+    <div class="outfit-description">AI가 "${location}"의 "${condition}" 날씨에 맞춰<br>옷차림을 생성하는 중...</div>
     <button onclick="hideClothingPopup()">닫기</button>
   `;
   popup.style.display = "block";
 
-try {
-    // Netlify의 실제 함수 경로로 직접 호출 (캐시 무시 파라미터 추가)
-    const response = await fetch(`/api/get-clothing-advice?temp=${temp}&cacheBust=${new Date().getTime()}`);
-    // ...
+  try {
+    // 2. 'condition' 파라미터를 fetch 주소에 추가
+    const response = await fetch(`/api/generate-outfit?temp=${temp}&location=${encodeURIComponent(location)}&condition=${encodeURIComponent(condition)}`);
+    
     if (!response.ok) {
-      throw new Error('서버에서 응답을 받지 못했습니다.');
+      const errorData = await response.json();
+      throw new Error(errorData.error || '서버에서 응답을 받지 못했습니다.');
     }
+    
     const data = await response.json();
     const outfitDescription = data.outfit;
 
+    // AI가 생성한 답변으로 팝업 내용을 업데이트합니다.
     popup.innerHTML = `
       <div class="tooltip-header">
         <div class="tooltip-title">✨ 추천 옷차림</div>
-        <div aria-hidden="true">${Number(temp).toFixed(1)}°C</div>
+        <div aria-hidden="true">${Number(temp).toFixed(1)}°C (${condition})</div>
       </div>
-      <div class="outfit-description">${outfitDescription}</div>
+      <div class="outfit-description" style="white-space: pre-wrap;">${outfitDescription}</div>
       <button onclick="hideClothingPopup()">확인</button>
     `;
 
   } catch (error) {
+    console.error("옷차림 추천 오류:", error);
     popup.innerHTML = `
       <div class="tooltip-header">
         <div class="tooltip-title">오류 발생</div>
@@ -487,7 +496,8 @@ async function getWeather() {
       td.innerText = avgTemp + "°C";
       if (avgTemp !== "-") {
         td.style.cursor = "pointer";
-        td.addEventListener("click", () => showClothingPopup(Number(avgTemp)));
+        // ===== (수정됨) showClothingPopup에 majority 변수 전달 =====
+        td.addEventListener("click", () => showClothingPopup(Number(avgTemp), majority));
       }
       tr.appendChild(td);
     });
@@ -495,16 +505,16 @@ async function getWeather() {
 
   // --- (차트 데이터 준비 로직 - 오타 수정됨) ---
   const chartOpenData = {};
-  const chartWeatherAPIData = {}; // 소문자 'a'
+  const chartWeatherAPIData = {}; 
   const chartTomorrowData = {};
   if (openData[tomorrowDisplayStr]) chartOpenData[tomorrowDisplayStr] = openData[tomorrowDisplayStr];
   if (openData[dayAfterTomorrowDisplayStr]) chartOpenData[dayAfterTomorrowDisplayStr] = openData[dayAfterTomorrowDisplayStr];
-  if (weatherAPIData[tomorrowDisplayStr]) chartWeatherAPIData[tomorrowDisplayStr] = weatherAPIData[tomorrowDisplayStr]; // 소문자 'a'
-  if (weatherAPIData[dayAfterTomorrowDisplayStr]) chartWeatherAPIData[dayAfterTomorrowDisplayStr] = weatherAPIData[dayAfterTomorrowDisplayStr]; // 소문자 'a'
+  if (weatherAPIData[tomorrowDisplayStr]) chartWeatherAPIData[tomorrowDisplayStr] = weatherAPIData[tomorrowDisplayStr]; 
+  if (weatherAPIData[dayAfterTomorrowDisplayStr]) chartWeatherAPIData[dayAfterTomorrowDisplayStr] = weatherAPIData[dayAfterTomorrowDisplayStr]; 
   if (tomorrowData[tomorrowDisplayStr]) chartTomorrowData[tomorrowDisplayStr] = tomorrowData[tomorrowDisplayStr];
   if (tomorrowData[dayAfterTomorrowDisplayStr]) chartTomorrowData[dayAfterTomorrowDisplayStr] = tomorrowData[dayAfterTomorrowDisplayStr];
 
-  drawChart(chartOpenData, chartWeatherAPIData, chartTomorrowData); // 소문자 'a'
+  drawChart(chartOpenData, chartWeatherAPIData, chartTomorrowData); 
 }
 
 // --- (차트 그리기 함수 - 오타 수정됨) ---
@@ -554,7 +564,7 @@ function drawChart(openData, weatherAPIData, tomorrowData) {
     data: {
       labels,
       datasets: [
-        { label: 'OpenWeather (°C)', data: openTemps, borderColor: 'blue', borderWidth: 2, fill: false, spanGaps: true }, // 'spanGaps'
+        { label: 'OpenWeather (°C)', data: openTemps, borderColor: 'blue', borderWidth: 2, fill: false, spanGaps: true }, 
         { label: 'WeatherAPI (°C)', data: weatherapiTemps, borderColor: 'green', borderWidth: 2, fill: false, spanGaps: true },
         { label: 'Tomorrow.io (°C)', data: tomorrowTemps, borderColor: 'orange', borderWidth: 2, fill: false, spanGaps: true }
       ]
