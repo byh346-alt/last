@@ -208,7 +208,7 @@ async function showClothingPopup(temp) {
 
   try {
     // Vercel 백엔드 함수 경로로 수정
-    const response = await fetch(`/api/generate-outfit?temp=${temp}`);
+    const response = await fetch(`/.netlify/functions/generate-outfit?temp=${temp}`);
     if (!response.ok) {
       throw new Error('서버에서 응답을 받지 못했습니다.');
     }
