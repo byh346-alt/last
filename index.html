@@ -206,9 +206,10 @@ async function showClothingPopup(temp) {
   `;
   popup.style.display = "block";
 
-  try {
-    // Vercel 백엔드 함수 경로로 수정
-    const response = await fetch(`/.netlify/functions/generate-outfit?temp=${temp}`);
+try {
+    // Netlify의 실제 함수 경로로 직접 호출 (캐시 무시 파라미터 추가)
+    const response = await fetch(`/.netlify/functions/generate-outfit?temp=${temp}&cacheBust=${new Date().getTime()}`);
+    // ...
     if (!response.ok) {
       throw new Error('서버에서 응답을 받지 못했습니다.');
     }
