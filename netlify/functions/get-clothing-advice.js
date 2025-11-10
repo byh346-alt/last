@@ -1,4 +1,4 @@
-// @google/generative-ai 라이브러리를 더 이상 사용하지 않습니다.
+// @google/generative-ai 라이브러리를 사용하지 않습니다.
 
 exports.handler = async function (event, context) {
   
@@ -13,9 +13,9 @@ exports.handler = async function (event, context) {
   const temp = event.queryStringParameters.temp;
   const location = event.queryStringParameters.location || '알 수 없음';
 
-// 3. Gemini API의 v1 (최신) 주소를 직접 사용합니다.
-  const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
-
+  // 3. ★★★ v1 (최신) 주소와 '사용 가능한' 모델 이름을 사용합니다. ★★★
+  const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+  
   // 4. Gemini에게 보낼 프롬프트를 만듭니다.
   const prompt = `
     당신은 날씨 기반 패션 어드바이저입니다.
@@ -35,7 +35,7 @@ exports.handler = async function (event, context) {
   };
 
   try {
-    // 6. 'fetch'를 사용해 Gemini API를 직접 호출합니다. (라이브러리 X)
+    // 6. 'fetch'를 사용해 Gemini API를 직접 호출합니다.
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -54,7 +54,6 @@ exports.handler = async function (event, context) {
     const data = await response.json();
 
     // 7. API 응답에서 텍스트를 추출합니다.
-    // (응답 형식이 라이브러리와 다릅니다: data.candidates[0].content.parts[0].text)
     const outfitText = data.candidates[0].content.parts[0].text;
 
     // 8. 성공적인 답변을 프론트엔드로 보냅니다.
