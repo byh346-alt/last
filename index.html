@@ -191,14 +191,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// ===== 옷차림 팝업 관련 (수정됨) =====
+// ===== 옷차림 팝업 관련 (Vercel 경로로 수정됨) =====
 const popup = document.getElementById("clothingPopup");
 
 /** 옷차림 팝업 열기 (condition 인자 추가됨) */
-async function showClothingPopup(temp, condition) { // <-- 1. condition 인자 받기
+async function showClothingPopup(temp, condition) { // <-- condition 인자 받기
   const popup = document.getElementById("clothingPopup");
   
-  // 현재 입력된 위치(도시명 또는 좌표) 값을 가져옵니다.
   const location = document.getElementById("cityInput").value || "특정 장소 없음";
 
   popup.innerHTML = `
@@ -212,8 +211,8 @@ async function showClothingPopup(temp, condition) { // <-- 1. condition 인자 �
   popup.style.display = "block";
 
   try {
-    // 2. 'condition' 파라미터를 fetch 주소에 추가
-    const response = await fetch(`/api/generate-outfit?temp=${temp}&location=${encodeURIComponent(location)}&condition=${encodeURIComponent(condition)}`);
+    // ===== ★★★ Vercel 경로로 수정 ★★★ =====
+    const response = await fetch(`/api/get-clothing-advice?temp=${temp}&location=${encodeURIComponent(location)}&condition=${encodeURIComponent(condition)}`);
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -223,7 +222,6 @@ async function showClothingPopup(temp, condition) { // <-- 1. condition 인자 �
     const data = await response.json();
     const outfitDescription = data.outfit;
 
-    // AI가 생성한 답변으로 팝업 내용을 업데이트합니다.
     popup.innerHTML = `
       <div class="tooltip-header">
         <div class="tooltip-title">✨ 추천 옷차림</div>
