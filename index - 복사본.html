@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>도시별 날씨 예측</title>
+  <style>
+    body { font-family: 'Inter', sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+    .container { max-width: 900px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+    h2 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
+    .input-section { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+    #cityInput { padding: 12px 18px; border: 1px solid #ddd; border-radius: 8px; flex-grow: 1; max-width: 300px; font-size: 16px; }
+    button {
+      padding: 12px 25px;
+      background: linear-gradient(145deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    button:hover {
+      background: linear-gradient(145deg, #45a049, #4CAF50);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    /* ===== '현재 위치' 버튼 스타일 ===== */
+    .location-button {
+      background: #3498db; /* 파란색 계열 */
+      width: 100%; /* 너비를 꽉 채움 */
+      max-width: 400px; /* 최대 너비 (기존 input+button과 비슷하게) */
+      margin-bottom: -15px; /* 아래 input-section과의 간격 조절 */
+    }
+    .location-button:hover {
+      background: #2980b9;
+    }
+    
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+    th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
+    th { background-color: #f0f8ff; color: #34495e; font-weight: 600; text-transform: uppercase; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #eef; }
+    td strong { color: #28a745; font-weight: bold; }
+    .chart-container { 
+      margin-top: 40px; 
+      padding: 20px; 
+      background-color: #fff; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      position: relative;
+      height: 50vh; 
+      max-height: 400px;
+    }
+    .message-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      text-align: center;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 80%;
+    }
+    .message-box h3 { margin: 0; color: #e74c3c; }
+    .message-box p { margin: 10px 0 0; color: #555; }
+    .message-box button {
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    .message-box button:hover { background-color: #2980b9; }
+
+    .tooltip-img {
+      position: fixed;
+      display: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      z-index: 2000;
+      width: 360px;
+      text-align: center;
+    }
+    .tooltip-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .tooltip-title {
+      font-weight: 700;
+      color: #111827;
+      font-size: 16px;
+    }
+    .tooltip-img .outfit-description {
+      margin-top: 15px;
+      font-size: 1.1em;
+      color: #374151;
+      line-height: 1.6;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+    .tooltip-img button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      width: 100%;
+      transition: background-color 0.2s ease;
+    }
+    .tooltip-img button:hover {
+      background-color: #2980b9;
+    }
+
+    @media (max-width: 768px) {
+      .input-section { flex-direction: column; align-items: center; }
+      #cityInput { max-width: 100%; }
+      button { width: 100%; }
+      table, th, td { font-size: 0.9em; }
+      .container { padding: 15px; margin: 10px; }
+      .tooltip-img { width: 90%; max-width: 360px; }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h2>날씨 예보</h2>
+    
+    <div class="input-section">
+      <button onclick="getLocation()" class="location-button">📍 현재 위치로 날씨 확인</button>
+    </div>
+
+    <div class="input-section">
+      <input type="text" id="cityInput" placeholder="도시명을 입력하세요 (예: Seoul)" />
+      <button onclick="getWeather()">날씨 확인</button>
+    </div>
+    
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>시간</th>
+          <th>OpenWeather</th>
+          <th>WeatherAPI</th>
+          <th>Tomorrow.io</th>
+          <th>예측 결과</th>
+          <th>평균기온</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+
+    <div id="chartContainer" class="chart-container">
+      <canvas id="tempChart"></canvas>
+    </div>
+  </div>
+
+  <div id="messageBox" class="message-box">
+    <h3 id="messageTitle"></h3>
+    <p id="messageContent"></p>
+    <button onclick="hideMessageBox()">확인</button>
+  </div>
+
+  <div id="clothingPopup" class="tooltip-img" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ===== 옷차림 팝업 관련 =====
+const popup = document.getElementById("clothingPopup");
+
+/** 옷차림 팝업 열기 */
+async function showClothingPopup(temp) {
+  popup.innerHTML = `
+    <div class="tooltip-header">
+      <div class="tooltip-title">✨ 추천 옷차림</div>
+      <div aria-hidden="true">${Number(temp).toFixed(1)}°C</div>
+    </div>
+    <div class="outfit-description">AI가 옷차림을 생성하는 중... 잠시만 기다려주세요.</div>
+    <button onclick="hideClothingPopup()">닫기</button>
+  `;
+  popup.style.display = "block";
+
+  try {
+    // Vercel 백엔드 함수 경로로 수정
+    const response = await fetch(`/api/generate-outfit?temp=${temp}`);
+    if (!response.ok) {
+      throw new Error('서버에서 응답을 받지 못했습니다.');
+    }
+    const data = await response.json();
+    const outfitDescription = data.outfit;
+
+    popup.innerHTML = `
+      <div class="tooltip-header">
+        <div class="tooltip-title">✨ 추천 옷차림</div>
+        <div aria-hidden="true">${Number(temp).toFixed(1)}°C</div>
+      </div>
+      <div class="outfit-description">${outfitDescription}</div>
+      <button onclick="hideClothingPopup()">확인</button>
+    `;
+
+  } catch (error) {
+    popup.innerHTML = `
+      <div class="tooltip-header">
+        <div class="tooltip-title">오류 발생</div>
+      </div>
+      <div class="outfit-description">${error.message}</div>
+      <button onclick="hideClothingPopup()">닫기</button>
+    `;
+  }
+}
+
+/** 옷차림 팝업 닫기 */
+function hideClothingPopup() {
+  popup.style.display = "none";
+}
+
+// ===== 메시지 박스 =====
+function showMessageBox(title, message) {
+  document.getElementById('messageTitle').innerText = title;
+  document.getElementById('messageContent').innerText = message;
+  document.getElementById('messageBox').style.display = 'flex';
+}
+function hideMessageBox() {
+  document.getElementById('messageBox').style.display = 'none';
+}
+
+// ===== GPS 위치 가져오기 함수 (도시 이름 변환 기능 추가됨) =====
+function getLocation() {
+  if (navigator.geolocation) {
+    showMessageBox("위치 확인 중...", "브라우저의 위치 정보 허용 팝업을 확인해주세요.");
+    
+    navigator.geolocation.getCurrentPosition(
+      // (A) 성공 시
+      async (position) => {
+        const lat = position.coords.latitude;  // 위도
+        const lon = position.coords.longitude; // 경도
+        
+        try {
+          // (1) OpenWeather 리버스 지오코딩 API 호출
+          const openWeatherKey = "5045da01a15a2d73d9763f79a7424d47"; // 기존 키 재사용
+          const geocodingURL = `https://corsproxy.io/?https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${openWeatherKey}`;
+          
+          const res = await fetch(geocodingURL);
+          const json = await res.json();
+          
+          if (!json || json.length === 0 || !json[0].name) {
+            throw new Error("도시 이름을 찾을 수 없습니다.");
+          }
+          
+          const cityName = json[0].name; // API가 반환한 도시 이름 (예: "Iksan-si")
+          
+          // (2) 가져온 도시 이름을 도시 입력창에 넣어줍니다.
+          document.getElementById("cityInput").value = cityName;
+          
+          // (3) 기존 getWeather 함수를 그대로 호출합니다.
+          showMessageBox("위치 확인 완료", `${cityName}의 날씨를 검색합니다.`);
+          getWeather();
+          
+        } catch (err) {
+          // 리버스 지오코딩 실패 시 (좌표로라도 검색 시도)
+          console.error("리버스 지오코딩 오류:", err.message);
+          showMessageBox("도시 이름 변환 실패", "좌표로 날씨를 검색합니다.");
+          document.getElementById("cityInput").value = `${lat},${lon}`; // 원래대로 좌표 입력
+          getWeather();
+        }
+      },
+      // (B) GPS 실패 (거부) 시
+      (error) => {
+        console.error("GPS Error:", error.message);
+        showMessageBox("위치 오류", "위치 정보를 가져오는 데 실패했습니다: " + error.message);
+      }
+    );
+  } else {
+    // Geolocation API를 지원하지 않는 오래된 브라우저
+    showMessageBox("지원 안 함", "이 브라우저에서는 위치 정보 기능을 사용할 수 없습니다.");
+  }
+}
+
+// ===== 날씨 가져오기 함수 (GPS 좌표 처리하도록 수정됨) =====
+async function getWeather() {
+  const city = document.getElementById("cityInput").value;
+  if (!city) {
+    showMessageBox("입력 오류", "도시명을 입력하세요.");
+    return;
+  }
+
+  const openWeatherKey = "5045da01a15a2d73d9763f79a7424d47";
+  const weatherAPIKey = "5517be1ed59948f99c772834250106";
+  const tomorrowKey = "rnMUfqE2BlmgdUW4gLKVgsvbobn4NnkF";
+
+  let openData = {}, weatherAPIData = {}, tomorrowData = {};
+  let lat = null;
+  let lon = null;
+
+  // (1) 좌표/도시이름 감지 로직
+  let isCoord = false;
+  const coords = city.split(',');
+  if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+    isCoord = true;
+    lat = parseFloat(coords[0]);
+    lon = parseFloat(coords[1]);
+  }
+
+  // (2) OpenWeather URL 생성 방식 수정
+  let openURL = '';
+  if (isCoord) {
+    openURL = `https://corsproxy.io/?https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${openWeatherKey}&units=metric`;
+  } else {
+    openURL = `https://corsproxy.io/?https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${openWeatherKey}&units=metric`;
+  }
+
+  // WeatherAPI URL (q= 파라미터가 좌표도 지원하므로 수정 불필요)
+  const weatherAPIURL = `https://corsproxy.io/?http://api.weatherapi.com/v1/forecast.json?key=${weatherAPIKey}&q=${city}&days=4&aqi=no&alerts=no`;
+
+  try {
+    const res = await fetch(openURL);
+    const json = await res.json();
+    if (json.cod !== "200") throw new Error(json.message || "OpenWeather API error");
+    
+    json.list.forEach(item => {
+      const dtUTC = new Date(item.dt_txt.replace(" ", "T") + "Z");
+      const dtKST = new Date(dtUTC.getTime() + (9 * 60 * 60 * 1000));
+      const date = dtKST.toISOString().slice(0, 10);
+      const time = dtKST.toISOString().slice(11, 16);
+      const hour = parseInt(time.substring(0, 2));
+      if (hour % 3 === 0) {
+        if (!openData[date]) openData[date] = {};
+        openData[date][time] = { weather: item.weather[0].main, temp: item.main.temp };
+      }
+    });
+
+    // (3) lat, lon 값 가져오는 방식 수정
+    if (!isCoord) {
+        lat = json.city.coord.lat;
+        lon = json.city.coord.lon;
+    }
+  } catch (err) {
+    console.error("OpenWeather 데이터 오류:", err);
+    showMessageBox("API 오류", "OpenWeather 데이터를 가져오는 데 실패했습니다.");
+  }
+
+  try {
+    const res = await fetch(weatherAPIURL);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message || "WeatherAPI error");
+    json.forecast.forecastday.forEach(day => {
+      const date = day.date;
+      day.hour.forEach(hour => {
+        const h = hour.time.split(" ")[1].substring(0, 2);
+        if (parseInt(h) % 3 === 0) {
+          const time = hour.time.split(" ")[1].substring(0, 5);
+          if (!weatherAPIData[date]) weatherAPIData[date] = {};
+          weatherAPIData[date][time] = { weather: hour.condition.text, temp: hour.temp_c };
+        }
+      });
+    });
+  } catch (err) {
+    console.error("WeatherAPI 데이터 오류:", err);
+  }
+
+  try {
+    // (4) Tomorrow.io 로직 (이제 lat, lon이 위에서 준비됨)
+    if (!lat || !lon) {
+        console.warn("위치 좌표 없음 (Tomorrow.io 요청 건너뜀)");
+    } else {
+        const tomorrowURL = `https://corsproxy.io/?https://api.tomorrow.io/v4/weather/forecast?location=${lat},${lon}&timesteps=1h&apikey=${tomorrowKey}`;
+        const res = await fetch(tomorrowURL);
+        const json = await res.json();
+        if (!json.timelines || !json.timelines.hourly) throw new Error("hourly 데이터 없음");
+        const targetHours = [0, 3, 6, 9, 12, 15, 18, 21];
+        json.timelines.hourly.forEach(item => {
+          const dtUTC = new Date(item.time);
+          const dtKST = new Date(dtUTC.getTime() + 9 * 60 * 60 * 1000);
+          const hour = dtKST.getUTCHours();
+          if (!targetHours.includes(hour)) return;
+          if (!item.values || item.values.weatherCode === undefined || item.values.temperature === undefined) return;
+          const date = dtKST.toISOString().split("T")[0];
+          const time = dtKST.toISOString().substring(11, 16);
+          const todayKSTForCompare = new Date();
+          todayKSTForCompare.setHours(0,0,0,0);
+          const itemDateKST = new Date(dtKST);
+          itemDateKST.setHours(0,0,0,0);
+          const dayDiff = Math.floor((itemDateKST - todayKSTForCompare) / (1000 * 60 * 60 * 24));
+          if (dayDiff < 0 || dayDiff >= 5) return;
+          if (!tomorrowData[date]) tomorrowData[date] = {};
+          const code = item.values.weatherCode;
+          let weather = "Unknown";
+          if ([1000, 1100].includes(code)) weather = "Sunny";
+          else if (code === 1001) weather = "Cloudy";
+          else if (code === 1001) weather = "Partly Cloudy";
+          else if (code === 1102) weather = "Mostly Cloudy";
+          else if (code >= 4000 && code < 5000) weather = "Rain";
+          else if (code >= 5000 && code < 6000) weather = "Snow";
+          else if (code >= 8000) weather = "Thunderstorm";
+          tomorrowData[date][time] = { weather, temp: item.values.temperature };
+        });
+    }
+  } catch (err) {
+    console.error("Tomorrow.io 오류:", err);
+  }
+
+  // --- (테이블 생성 로직) ---
+  const todayForReference = new Date();
+  const tomorrow = new Date(todayForReference); tomorrow.setDate(todayForReference.getDate() + 1);
+  const dayAfterTomorrow = new Date(todayForReference); dayAfterTomorrow.setDate(todayForReference.getDate() + 2);
+  const tomorrowDisplayStr = tomorrow.toISOString().split('T')[0];
+  const dayAfterTomorrowDisplayStr = dayAfterTomorrow.toISOString().split('T')[0];
+
+  const tbody = document.getElementById("resultsBody");
+  tbody.innerHTML = "";
+
+  const datesForTableDisplay = Array.from(new Set([
+    ...Object.keys(openData),
+    ...Object.keys(weatherAPIData),
+    ...Object.keys(tomorrowData)
+  ]))
+  .filter(date => date === tomorrowDisplayStr || date === dayAfterTomorrowDisplayStr)
+  .sort();
+
+  if (datesForTableDisplay.length === 0) {
+    showMessageBox("정보 없음", "선택된 날짜에 대한 예보 데이터가 없습니다.");
+  }
+
+  datesForTableDisplay.forEach(date => {
+    const times = new Set([
+      ...(openData[date] ? Object.keys(openData[date]) : []),
+      ...(weatherAPIData[date] ? Object.keys(weatherAPIData[date]) : []),
+      ...(tomorrowData[date] ? Object.keys(tomorrowData[date]) : []),
+    ]);
+
+    [...times].sort().forEach(time => {
+      const hour = parseInt(time.split(":")[0]);
+      if (hour % 3 !== 0) return;
+      const openVal = openData[date]?.[time] || { weather: "N/A", temp: "-" };
+      const weatherapiVal = weatherAPIData[date]?.[time] || { weather: "N/A", temp: "-" };
+      const tomoVal = tomorrowData[date]?.[time] || { weather: "N/A", temp: "-" };
+      const temps = [openVal.temp, weatherapiVal.temp, tomoVal.temp].filter(t => typeof t === "number");
+      const avgTemp = temps.length > 0 ? (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1) : "-";
+      const votes = [openVal.weather, weatherapiVal.weather, tomoVal.weather]
+        .filter(w => w !== "N/A" && w !== "오류" && w !== "Unknown");
+      let majority = "N/A";
+      if (votes.length > 0) {
+        const freq = {};
+        votes.forEach(w => freq[w] = (freq[w] || 0) + 1);
+        majority = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${date}</td>
+        <td>${time}</td>
+        <td>${openVal.weather} (${openVal.temp}°C)</td>
+        <td>${weatherapiVal.weather} (${weatherapiVal.temp}°C)</td>
+        <td>${tomoVal.weather} (${tomoVal.temp}°C)</td>
+        <td><strong>${majority}</strong></td>
+      `;
+      tbody.appendChild(tr);
+
+      const td = document.createElement("td");
+      td.innerText = avgTemp + "°C";
+      if (avgTemp !== "-") {
+        td.style.cursor = "pointer";
+        td.addEventListener("click", () => showClothingPopup(Number(avgTemp)));
+      }
+      tr.appendChild(td);
+    });
+  });
+
+  // --- (차트 데이터 준비 로직 - 오타 수정됨) ---
+  const chartOpenData = {};
+  const chartWeatherAPIData = {}; // 소문자 'a'
+  const chartTomorrowData = {};
+  if (openData[tomorrowDisplayStr]) chartOpenData[tomorrowDisplayStr] = openData[tomorrowDisplayStr];
+  if (openData[dayAfterTomorrowDisplayStr]) chartOpenData[dayAfterTomorrowDisplayStr] = openData[dayAfterTomorrowDisplayStr];
+  if (weatherAPIData[tomorrowDisplayStr]) chartWeatherAPIData[tomorrowDisplayStr] = weatherAPIData[tomorrowDisplayStr]; // 소문자 'a'
+  if (weatherAPIData[dayAfterTomorrowDisplayStr]) chartWeatherAPIData[dayAfterTomorrowDisplayStr] = weatherAPIData[dayAfterTomorrowDisplayStr]; // 소문자 'a'
+  if (tomorrowData[tomorrowDisplayStr]) chartTomorrowData[tomorrowDisplayStr] = tomorrowData[tomorrowDisplayStr];
+  if (tomorrowData[dayAfterTomorrowDisplayStr]) chartTomorrowData[dayAfterTomorrowDisplayStr] = tomorrowData[dayAfterTomorrowDisplayStr];
+
+  drawChart(chartOpenData, chartWeatherAPIData, chartTomorrowData); // 소문자 'a'
+}
+
+// --- (차트 그리기 함수 - 오타 수정됨) ---
+function drawChart(openData, weatherAPIData, tomorrowData) {
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = `<canvas id="tempChart"></canvas>`;
+  const ctx = document.getElementById("tempChart").getContext("2d");
+
+  const isMobile = window.innerWidth <= 768;
+
+  const labels = [];
+  const openTemps = [];
+  const weatherapiTemps = [];
+  const tomorrowTemps = [];
+
+  const allDates = new Set([
+    ...Object.keys(openData),
+    ...Object.keys(weatherAPIData),
+    ...Object.keys(tomorrowData)
+  ]);
+
+  Array.from(allDates).sort().forEach(date => {
+    const allTimes = new Set([
+      ...(openData[date] ? Object.keys(openData[date]) : []),
+      ...(weatherAPIData[date] ? Object.keys(weatherAPIData[date]) : []),
+      ...(tomorrowData[date] ? Object.keys(tomorrowData[date]) : [])
+    ]);
+
+    Array.from(allTimes).sort().forEach(time => {
+      const hour = parseInt(time.split(':')[0]);
+      if (isMobile && hour % 6 !== 0) {
+        return;
+      }
+      const label = `${date} ${time}`;
+      labels.push(label);
+      const openVal = openData[date]?.[time];
+      openTemps.push(openVal ? openVal.temp : null);
+      const weatherapiVal = weatherAPIData[date]?.[time];
+      weatherapiTemps.push(weatherapiVal ? weatherapiVal.temp : null);
+      const tomorrowVal = tomorrowData[date]?.[time];
+      tomorrowTemps.push(tomorrowVal ? tomorrowVal.temp : null);
+    });
+  });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'OpenWeather (°C)', data: openTemps, borderColor: 'blue', borderWidth: 2, fill: false, spanGaps: true }, // 'spanGaps'
+        { label: 'WeatherAPI (°C)', data: weatherapiTemps, borderColor: 'green', borderWidth: 2, fill: false, spanGaps: true },
+        { label: 'Tomorrow.io (°C)', data: tomorrowTemps, borderColor: 'orange', borderWidth: 2, fill: false, spanGaps: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { display: true }, y: { beginAtZero: false } }
+    }
+  });
+}
+</script>
+</body>
+</html>
