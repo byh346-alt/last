@@ -20,7 +20,7 @@ exports.handler = async function (event, context) {
   const prompt = `
     당신은 날씨 기반 패션 어드바이저입니다.
     현재 위치는 "${location}"이고, 평균 기온은 ${temp}°C 입니다.
-    이 날씨와 장소에 어울리는 옷차림을 구체적이고 친절하게 추천해주세요.
+    이 날씨와 장소에 어울리는 옷차림을 3줄에서 4줄정도로 추천해주세요.
   `;
 
   // 5. Gemini API가 요구하는 JSON 요청 본문(Body) 형식
