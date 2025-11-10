@@ -13,8 +13,8 @@ exports.handler = async function (event, context) {
   const temp = event.queryStringParameters.temp;
   const location = event.queryStringParameters.location || '알 수 없음';
 
-  // 3. Gemini API의 v1 (최신) 주소를 직접 사용합니다.
-  const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+// 3. Gemini API의 v1 (최신) 주소를 직접 사용합니다.
+  const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
 
   // 4. Gemini에게 보낼 프롬프트를 만듭니다.
   const prompt = `
